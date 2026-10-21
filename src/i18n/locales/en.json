@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "logoAlt": "Moya Bank logo"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "howItWorks": "How it works",
+    "signIn": "Sign in",
+    "openAccount": "Open an account",
+    "getApp": "Get the app",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "primary": "Primary navigation",
+    "menu": "Menu"
+  },
+  "hero": {
+    "title": "Understand your spending. Take control.",
+    "description": "The Customer Spending Insights Dashboard gives you a clearer view of your money — your spending trends, categories, transactions and goals — all in one place.",
+    "signInCta": "Sign in to continue",
+    "exploreCta": "Explore features",
+    "imageAlt": "Moya Bank app showing a spending overview next to a bank card"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "subtitle": "Enter your account number and PIN to view your spending insights.",
+    "accountNumber": "Account number",
+    "accountNumberPlaceholder": "12345678901234",
+    "accountNumberHint": "Your {{count}}-digit account number.",
+    "pin": "PIN",
+    "pinHint": "Your {{count}}-digit PIN.",
+    "showPin": "Show PIN",
+    "hidePin": "Hide PIN",
+    "submit": "Sign in",
+    "close": "Close sign in",
+    "noAccount": "Don't have an account?",
+    "errors": {
+      "accountNumberRequired": "Please enter your account number.",
+      "accountNumberInvalid": "Account number must be exactly 14 digits.",
+      "pinRequired": "Please enter your PIN.",
+      "pinInvalid": "PIN must be exactly 5 digits."
+    }
+  },
+  "features": {
+    "heading": "Features",
+    "trends": {
+      "title": "Spending trends",
+      "description": "See how your spending changes over time with easy-to-read charts and summaries."
+    },
+    "categories": {
+      "title": "Category insights",
+      "description": "Understand where your money goes and find opportunities to save."
+    },
+    "transactions": {
+      "title": "Transaction history",
+      "description": "View, filter and search your transactions with full details and categories."
+    },
+    "goals": {
+      "title": "Set your goals",
+      "description": "Track your progress and build better financial habits for the future."
+    }
+  }
+}

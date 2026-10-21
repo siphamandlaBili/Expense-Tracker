@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #0033a0;
+  --color-primary-dark: #00267a;
+  --color-primary-light: #eaf0fb;
+  --color-heading: #0b1f44;
+  --color-body: #5b6577;
+  --color-surface: #f5f8fd;
+}
+
+body {
+  @apply bg-white text-body antialiased;
+}

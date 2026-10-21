@@ -1,0 +1,231 @@
+import { useEffect, useId, useRef, useState, type SubmitEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { LuArrowRight, LuEye, LuEyeOff, LuX } from "react-icons/lu";
+import {
+  ACCOUNT_NUMBER_LENGTH,
+  PIN_LENGTH,
+  validateSignIn,
+  type SignInErrors,
+  type SignInValues,
+} from "./signInSchema";
+
+type SignInDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (values: SignInValues) => void;
+};
+
+const EMPTY_VALUES: SignInValues = { accountNumber: "", pin: "" };
+
+const digitsOnly = (value: string, maxLength: number) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
+export function SignInDialog({ open, ...props }: SignInDialogProps) {
+  // Unmounting the panel on close discards all form state, so every way of
+  // closing (Escape, backdrop, close button, submit) starts fresh next time.
+  return open ? <SignInDialogPanel {...props} /> : null;
+}
+
+function SignInDialogPanel({
+  onClose,
+  onSubmit,
+}: Omit<SignInDialogProps, "open">) {
+  const { t } = useTranslation();
+  const titleId = useId();
+  const accountId = useId();
+  const pinId = useId();
+  const accountInputRef = useRef<HTMLInputElement>(null);
+
+  const [values, setValues] = useState<SignInValues>(EMPTY_VALUES);
+  const [errors, setErrors] = useState<SignInErrors>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    accountInputRef.current?.focus();
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+      previouslyFocused?.focus();
+    };
+  }, [onClose]);
+
+  const updateField = (field: keyof SignInValues, value: string) => {
+    const next = { ...values, [field]: value };
+    setValues(next);
+    if (submitted) setErrors(validateSignIn(next));
+  };
+
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitted(true);
+
+    const nextErrors = validateSignIn(values);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    onSubmit(values);
+    onClose();
+  };
+
+  const inputClass = (hasError: boolean) =>
+    `w-full rounded-xl border bg-white px-4 py-2.5 text-heading tracking-wider outline-none transition autofill:shadow-[inset_0_0_0_1000px_white] placeholder:tracking-normal placeholder:text-body/60 focus:ring-1 ${
+      hasError
+        ? "border-red-500 focus:ring-red-100"
+        : "border-slate-300 focus:border-primary focus:ring-primary"
+    }`;
+
+  return (
+    <div
+      data-testid="sign-in-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-heading/50 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl sm:p-6"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("signIn.close")}
+          className="absolute top-3 right-3 rounded-full p-2 text-body hover:bg-primary-light hover:text-primary"
+        >
+          <LuX className="size-5" aria-hidden />
+        </button>
+
+        <h2
+          id={titleId}
+          className="pr-8 text-xl leading-tight font-bold text-heading"
+        >
+          {t("signIn.title")}
+        </h2>
+        <p className="mt-0.5 text-sm leading-snug text-body">
+          {t("signIn.subtitle")}
+        </p>
+
+        <form
+          noValidate
+          autoComplete="off"
+          onSubmit={handleSubmit}
+          className="mt-5 space-y-3"
+        >
+          <div>
+            <label
+              htmlFor={accountId}
+              className="mb-1 block text-sm font-medium text-heading"
+            >
+              {t("signIn.accountNumber")}
+            </label>
+            <input
+              ref={accountInputRef}
+              id={accountId}
+              name="accountNumber"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={ACCOUNT_NUMBER_LENGTH}
+              placeholder={t("signIn.accountNumberPlaceholder")}
+              value={values.accountNumber}
+              onChange={(event) =>
+                updateField(
+                  "accountNumber",
+                  digitsOnly(event.target.value, ACCOUNT_NUMBER_LENGTH),
+                )
+              }
+              aria-invalid={Boolean(errors.accountNumber)}
+              aria-describedby={`${accountId}-hint`}
+              className={inputClass(Boolean(errors.accountNumber))}
+            />
+            <p
+              id={`${accountId}-hint`}
+              className={`mt-1 text-xs ${errors.accountNumber ? "text-red-600" : "text-body"}`}
+            >
+              {errors.accountNumber
+                ? t(errors.accountNumber)
+                : t("signIn.accountNumberHint", {
+                    count: ACCOUNT_NUMBER_LENGTH,
+                  })}
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor={pinId}
+              className="mb-1 block text-sm font-medium text-heading"
+            >
+              {t("signIn.pin")}
+            </label>
+            <div className="relative">
+              <input
+                id={pinId}
+                name="pin"
+                type={showPin ? "text" : "password"}
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={PIN_LENGTH}
+                value={values.pin}
+                onChange={(event) =>
+                  updateField("pin", digitsOnly(event.target.value, PIN_LENGTH))
+                }
+                aria-invalid={Boolean(errors.pin)}
+                aria-describedby={`${pinId}-hint`}
+                className={`${inputClass(Boolean(errors.pin))} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin((show) => !show)}
+                aria-label={showPin ? t("signIn.hidePin") : t("signIn.showPin")}
+                className="absolute inset-y-0 right-0 flex items-center px-4 text-body hover:text-primary"
+              >
+                {showPin ? (
+                  <LuEyeOff className="size-5" aria-hidden />
+                ) : (
+                  <LuEye className="size-5" aria-hidden />
+                )}
+              </button>
+            </div>
+            <p
+              id={`${pinId}-hint`}
+              className={`mt-1 text-xs ${errors.pin ? "text-red-600" : "text-body"}`}
+            >
+              {errors.pin
+                ? t(errors.pin)
+                : t("signIn.pinHint", { count: PIN_LENGTH })}
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            className="mt-1 inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-7 py-3 font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-dark"
+          >
+            {t("signIn.submit")}
+            <LuArrowRight className="size-5" aria-hidden />
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-body">
+          {t("signIn.noAccount")}{" "}
+          <a
+            href="#open-account"
+            onClick={onClose}
+            className="font-semibold text-primary hover:underline"
+          >
+            {t("nav.openAccount")}
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}

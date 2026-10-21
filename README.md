@@ -15,6 +15,38 @@
 
 First-time e2e setup: `npx playwright install chromium`.
 
+## API and mock data
+
+The app talks to the spending API through typed React Query hooks:
+
+- `src/api/queries.ts`: `useProfile`, `useSpendingSummary`,
+  `useSpendingByCategory`, `useSpendingTrends`, `useTransactions`, `useGoals`,
+  `useFilters`.
+- `src/api/mutations.ts`: `useCreateGoal`, `useUpdateGoal`, `useDeleteGoal`.
+- Every response is validated against the zod schemas in `src/api/schemas.ts`.
+
+Until the real API exists, every request is answered by a mock running in the
+browser (MSW, in `src/mocks/`), including in the deployed build. To control it:
+
+| Variable            | Effect                                       |
+| ------------------- | -------------------------------------------- |
+| `VITE_ENABLE_MOCKS` | `"true"` (set in `.env`) serves the mock API |
+| `VITE_API_BASE_URL` | Real API base URL; defaults to `/api`        |
+
+How the mock behaves:
+
+- **Transactions** are about 1,300 generated from a fixed seed over the last 25
+  months, ending today. The same day always gives the same data.
+- **Figures always agree.** Summary, categories, trends, goal progress and the
+  profile total are all calculated from those transactions.
+- **Errors follow the API contract.** Bad input returns 400, an unknown customer
+  or goal 404, and a duplicate goal 409.
+- **Goals are editable**, and changes are saved in the browser's localStorage so
+  they survive a reload. Each visitor has their own copy. Run
+  `localStorage.removeItem("moya-mock-db:v1:goals")` to reset.
+
+Demo customer ID: `12345`.
+
 ## Testing
 
 ### Layers

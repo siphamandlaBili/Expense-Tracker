@@ -20,17 +20,20 @@ import {
   spendingSummary,
   sum,
 } from "./compute";
-import { db } from "./db";
+import { customerDb, now, type CustomerDb } from "./db";
 import {
   categoriesFixture,
-  CUSTOMER_ID,
   dateRangePresetsFixture,
-  profileFixture,
+  findUser,
+  MOCK_USERS,
+  type MockUser,
+  type StoredGoal,
 } from "./fixtures";
 
 // Mock implementation of the spending API. Behaves like the real contract:
-// validates input, returns 400/404/409 errors, and derives every figure from
-// one transaction history. Override per test with `server.use(...)`.
+// validates input, returns 400/401/404/409 errors, and derives every figure
+// from one transaction history. Which data a customer gets depends on their
+// scenario in MOCK_USERS. Override per test with `server.use(...)`.
 
 const BASE = `${API_BASE_URL}/customers/:customerId`;
 
@@ -40,12 +43,21 @@ const error = (status: number, message: string) =>
 const queryParams = (request: Request) =>
   Object.fromEntries(new URL(request.url).searchParams);
 
-/** Wraps a resolver with simulated latency and the customer lookup. */
+type ResolverArgs<P> = {
+  request: Request;
+  params: P;
+  user: MockUser;
+  store: CustomerDb;
+};
+
+/**
+ * Wraps a resolver with simulated latency, the customer lookup and the
+ * "error" scenario. `failInErrorScenario: false` keeps an endpoint working
+ * for that customer (the profile, so the dashboard shell can still render).
+ */
 function forCustomer<P extends Record<string, string>>(
-  resolver: (args: {
-    request: Request;
-    params: P;
-  }) => Response | Promise<Response>,
+  resolver: (args: ResolverArgs<P>) => Response | Promise<Response>,
+  { failInErrorScenario = true } = {},
 ) {
   return async ({
     request,
@@ -55,10 +67,19 @@ function forCustomer<P extends Record<string, string>>(
     params: Record<string, string | readonly string[] | undefined>;
   }) => {
     await delay();
-    if (params.customerId !== CUSTOMER_ID) {
+    const user = findUser(String(params.customerId));
+    if (!user) {
       return error(404, `Customer ${String(params.customerId)} not found`);
     }
-    return resolver({ request, params: params as P });
+    if (failInErrorScenario && user.scenario === "error") {
+      return error(500, "The spending service is temporarily unavailable");
+    }
+    return resolver({
+      request,
+      params: params as P,
+      user,
+      store: customerDb(user.customerId),
+    });
   };
 }
 
@@ -69,6 +90,11 @@ function parse<T>(schema: z.ZodType<T>, input: unknown) {
     ? { data: result.data, response: null }
     : { data: null, response: error(400, z.prettifyError(result.error)) };
 }
+
+const signInBodySchema = z.object({
+  accountNumber: z.string(),
+  pin: z.string(),
+});
 
 const periodQuerySchema = z.object({
   period: periodSchema.default("30d"),
@@ -113,32 +139,56 @@ const createGoalBodySchema = createGoalInputSchema.extend({
   category: knownCategory,
 });
 
-const goalResponse = (goal: Parameters<typeof goalProgress>[0]) =>
-  goalProgress(goal, db.transactions(), db.now());
+const goalResponse = (store: CustomerDb, goal: StoredGoal) =>
+  goalProgress(goal, store.transactions(), now());
 
 export const handlers: RequestHandler[] = [
+  http.post(`${API_BASE_URL}/auth/sign-in`, async ({ request }) => {
+    await delay();
+    const { data, response } = parse(
+      signInBodySchema,
+      await request.json().catch(() => null),
+    );
+    if (response) return response;
+
+    const user = MOCK_USERS.find(
+      (candidate) =>
+        candidate.accountNumber === data.accountNumber &&
+        candidate.pin === data.pin,
+    );
+    if (!user) return error(401, "Incorrect account number or PIN");
+
+    return HttpResponse.json({
+      customerId: user.customerId,
+      name: user.profile.name,
+    });
+  }),
+
   http.get(
     `${BASE}/profile`,
-    forCustomer(() =>
-      HttpResponse.json({
-        ...profileFixture,
-        totalSpent: sum(db.transactions()),
-      }),
+    forCustomer(
+      ({ user, store }) =>
+        HttpResponse.json({
+          customerId: user.customerId,
+          ...user.profile,
+          totalSpent: sum(store.transactions()),
+        }),
+      { failInErrorScenario: false },
     ),
   ),
 
   http.get(
     `${BASE}/spending/summary`,
-    forCustomer(({ request }) => {
+    forCustomer(({ request, store }) => {
       const { data, response } = parse(periodQuerySchema, queryParams(request));
       if (response) return response;
 
       return HttpResponse.json(
         spendingSummary(
-          db.transactions(),
+          store.transactions(),
           categoriesFixture,
           data.period,
-          db.now(),
+          now(),
         ),
       );
     }),
@@ -146,7 +196,7 @@ export const handlers: RequestHandler[] = [
 
   http.get(
     `${BASE}/spending/categories`,
-    forCustomer(({ request }) => {
+    forCustomer(({ request, store }) => {
       const { data, response } = parse(
         categoriesQuerySchema,
         queryParams(request),
@@ -156,12 +206,12 @@ export const handlers: RequestHandler[] = [
       const range =
         data.startDate && data.endDate
           ? customRange(data.startDate, data.endDate)
-          : periodRange(data.period, db.now());
+          : periodRange(data.period, now());
 
       return HttpResponse.json({
         dateRange: describeRange(range),
         ...categoryBreakdown(
-          inRange(db.transactions(), range),
+          inRange(store.transactions(), range),
           categoriesFixture,
         ),
       });
@@ -170,49 +220,51 @@ export const handlers: RequestHandler[] = [
 
   http.get(
     `${BASE}/spending/trends`,
-    forCustomer(({ request }) => {
+    forCustomer(({ request, store }) => {
       const { data, response } = parse(trendsQuerySchema, queryParams(request));
       if (response) return response;
 
       return HttpResponse.json({
-        trends: monthlyTrends(db.transactions(), data.months, db.now()),
+        trends: monthlyTrends(store.transactions(), data.months, now()),
       });
     }),
   ),
 
   http.get(
     `${BASE}/transactions`,
-    forCustomer(({ request }) => {
+    forCustomer(({ request, store }) => {
       const { data, response } = parse(
         transactionsQuerySchema,
         queryParams(request),
       );
       if (response) return response;
 
-      return HttpResponse.json(queryTransactions(db.transactions(), data));
+      return HttpResponse.json(queryTransactions(store.transactions(), data));
     }),
   ),
 
   http.get(
     `${BASE}/goals`,
-    forCustomer(() =>
-      HttpResponse.json({ goals: db.goals().map(goalResponse) }),
+    forCustomer(({ store }) =>
+      HttpResponse.json({
+        goals: store.goals().map((goal) => goalResponse(store, goal)),
+      }),
     ),
   ),
 
   http.post(
     `${BASE}/goals`,
-    forCustomer(async ({ request }) => {
+    forCustomer(async ({ request, store }) => {
       const { data, response } = parse(
         createGoalBodySchema,
         await request.json().catch(() => null),
       );
       if (response) return response;
 
-      if (db.goals().some((goal) => goal.category === data.category)) {
+      if (store.goals().some((goal) => goal.category === data.category)) {
         return error(409, `A goal for ${data.category} already exists`);
       }
-      return HttpResponse.json(goalResponse(db.createGoal(data)), {
+      return HttpResponse.json(goalResponse(store, store.createGoal(data)), {
         status: 201,
       });
     }),
@@ -220,24 +272,24 @@ export const handlers: RequestHandler[] = [
 
   http.patch(
     `${BASE}/goals/:goalId`,
-    forCustomer<{ goalId: string }>(async ({ request, params }) => {
+    forCustomer<{ goalId: string }>(async ({ request, params, store }) => {
       const { data, response } = parse(
         updateGoalInputSchema,
         await request.json().catch(() => null),
       );
       if (response) return response;
 
-      const updated = db.updateGoal(params.goalId, data);
+      const updated = store.updateGoal(params.goalId, data);
       return updated
-        ? HttpResponse.json(goalResponse(updated))
+        ? HttpResponse.json(goalResponse(store, updated))
         : error(404, `Goal ${params.goalId} not found`);
     }),
   ),
 
   http.delete(
     `${BASE}/goals/:goalId`,
-    forCustomer<{ goalId: string }>(({ params }) =>
-      db.deleteGoal(params.goalId)
+    forCustomer<{ goalId: string }>(({ params, store }) =>
+      store.deleteGoal(params.goalId)
         ? new HttpResponse(null, { status: 204 })
         : error(404, `Goal ${params.goalId} not found`),
     ),

@@ -1,34 +1,36 @@
 import type { Transaction } from "../api/schemas";
-import { goalsFixture, type StoredGoal } from "./fixtures";
+import { findUser, MOCK_USERS, type StoredGoal } from "./fixtures";
 import { generateTransactions } from "./generateTransactions";
 
-// In-memory "database" behind the mock API. Transactions are generated from
-// a fixed seed; goals are writable and saved to localStorage so changes
-// survive a page refresh in the deployed demo.
+// In-memory "database" behind the mock API, one store per customer.
+// Transactions are generated from a fixed seed; goals are writable and saved
+// to localStorage so changes survive a page refresh in the deployed demo.
 
-const STORAGE_KEY = "moya-mock-db:v1:goals";
+const storageKey = (customerId: string) =>
+  `moya-mock-db:v2:${customerId}:goals`;
 
-type DbState = {
-  now: () => Date;
+type CustomerState = {
   transactions: Transaction[];
   goals: StoredGoal[];
   nextGoalNumber: number;
 };
 
-let state: DbState | null = null;
+let clock: () => Date = () => new Date();
+let stores = new Map<string, CustomerState>();
+let freshStart = false;
 
-function readStoredGoals(): StoredGoal[] | null {
+function readStoredGoals(customerId: string): StoredGoal[] | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey(customerId));
     return raw ? (JSON.parse(raw) as StoredGoal[]) : null;
   } catch {
     return null;
   }
 }
 
-function persistGoals(goals: StoredGoal[]) {
+function persistGoals(customerId: string, goals: StoredGoal[]) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+    window.localStorage.setItem(storageKey(customerId), JSON.stringify(goals));
   } catch {
     // Storage can be unavailable (private mode, quota); the session still works.
   }
@@ -39,6 +41,20 @@ function nextNumberAfter(goals: StoredGoal[]) {
   return Math.max(0, ...numbers) + 1;
 }
 
+function createState(customerId: string): CustomerState {
+  const user = findUser(customerId);
+  const seedGoals = structuredClone(user?.goals ?? []);
+  const goals = (!freshStart && readStoredGoals(customerId)) || seedGoals;
+  if (freshStart) persistGoals(customerId, goals);
+
+  return {
+    transactions:
+      user?.scenario === "active" ? generateTransactions(clock()) : [],
+    goals,
+    nextGoalNumber: nextNumberAfter(goals),
+  };
+}
+
 type ResetOptions = {
   /** Fixed clock for deterministic tests. Defaults to the real time. */
   now?: Date;
@@ -47,58 +63,65 @@ type ResetOptions = {
 };
 
 export function resetDb({ now, fresh = false }: ResetOptions = {}) {
-  const clock = now ? () => new Date(now) : () => new Date();
-  const goals = (!fresh && readStoredGoals()) || structuredClone(goalsFixture);
-  if (fresh) persistGoals(goals);
+  clock = now ? () => new Date(now) : () => new Date();
+  freshStart = fresh;
+  stores = new Map();
+  if (fresh) {
+    for (const user of MOCK_USERS)
+      stores.set(user.customerId, createState(user.customerId));
+  }
+}
 
-  state = {
-    now: clock,
-    transactions: generateTransactions(clock()),
-    goals,
-    nextGoalNumber: nextNumberAfter(goals),
+/** Store for one customer, created on first use. */
+export function customerDb(customerId: string) {
+  const state = () => {
+    let existing = stores.get(customerId);
+    if (!existing) {
+      existing = createState(customerId);
+      stores.set(customerId, existing);
+    }
+    return existing;
   };
-  return state;
+
+  return {
+    transactions: () => state().transactions,
+    goals: () => state().goals,
+
+    createGoal(input: Omit<StoredGoal, "id">): StoredGoal {
+      const current = state();
+      const goal = {
+        id: `goal_${String(current.nextGoalNumber).padStart(3, "0")}`,
+        ...input,
+      };
+      current.nextGoalNumber += 1;
+      current.goals = [...current.goals, goal];
+      persistGoals(customerId, current.goals);
+      return goal;
+    },
+
+    updateGoal(id: string, changes: Pick<StoredGoal, "monthlyBudget">) {
+      const current = state();
+      const existing = current.goals.find((goal) => goal.id === id);
+      if (!existing) return null;
+
+      const updated = { ...existing, ...changes };
+      current.goals = current.goals.map((goal) =>
+        goal.id === id ? updated : goal,
+      );
+      persistGoals(customerId, current.goals);
+      return updated;
+    },
+
+    deleteGoal(id: string) {
+      const current = state();
+      const before = current.goals.length;
+      current.goals = current.goals.filter((goal) => goal.id !== id);
+      persistGoals(customerId, current.goals);
+      return current.goals.length < before;
+    },
+  };
 }
 
-function getState() {
-  return state ?? resetDb();
-}
+export type CustomerDb = ReturnType<typeof customerDb>;
 
-export const db = {
-  now: () => getState().now(),
-  transactions: () => getState().transactions,
-  goals: () => getState().goals,
-
-  createGoal(input: Omit<StoredGoal, "id">): StoredGoal {
-    const current = getState();
-    const goal = {
-      id: `goal_${String(current.nextGoalNumber).padStart(3, "0")}`,
-      ...input,
-    };
-    current.nextGoalNumber += 1;
-    current.goals = [...current.goals, goal];
-    persistGoals(current.goals);
-    return goal;
-  },
-
-  updateGoal(id: string, changes: Pick<StoredGoal, "monthlyBudget">) {
-    const current = getState();
-    const existing = current.goals.find((goal) => goal.id === id);
-    if (!existing) return null;
-
-    const updated = { ...existing, ...changes };
-    current.goals = current.goals.map((goal) =>
-      goal.id === id ? updated : goal,
-    );
-    persistGoals(current.goals);
-    return updated;
-  },
-
-  deleteGoal(id: string) {
-    const current = getState();
-    const before = current.goals.length;
-    current.goals = current.goals.filter((goal) => goal.id !== id);
-    persistGoals(current.goals);
-    return current.goals.length < before;
-  },
-};
+export const now = () => clock();

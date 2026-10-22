@@ -15,6 +15,36 @@
 
 First-time e2e setup: `npx playwright install chromium`.
 
+## Project structure
+
+```
+src/
+  api/          zod schemas, fetch client, React Query hooks and mutations
+  app/          app-wide providers and the QueryClient
+  auth/         session, AuthProvider, RequireAuth
+  components/
+    charts/     TrendChart, CategoryDonut, shared chart colours
+    dashboard/  shared dashboard UI: Panel + QueryContent (loading, error and
+                empty states), PageHeader, ChangeIndicator, CategoryBadge,
+                StatCards, sidebar, drawer
+    spending/   pieces used only by the Spending page
+    landing/    landing page sections
+  lib/          pure helpers (formatting, filters, series bucketing) and hooks
+  mocks/        MSW handlers and the mock database
+  pages/        one component per route
+  test/         render helpers, factories, axe helper
+```
+
+Conventions that keep pages consistent:
+
+- **Page heading:** every page starts with `PageHeader`.
+- **Cards:** every card is a `Panel`, and data inside it renders through
+  `QueryContent`, so loading, error (with retry) and empty states look and
+  behave the same everywhere.
+- **Charts:** use the chart components in `components/charts`. They take data
+  and labels, not API responses, so any page can reuse them.
+- **Text:** all visible text lives in `src/i18n/locales/en.json`.
+
 ## API and mock data
 
 The app talks to the spending API through typed React Query hooks:
@@ -45,7 +75,32 @@ How the mock behaves:
   they survive a reload. Each visitor has their own copy. Run
   `localStorage.removeItem("moya-mock-db:v1:goals")` to reset.
 
-Demo customer ID: `12345`.
+### Demo sign-in
+
+| Account number   | PIN     | Customer | Shows                                         |
+| ---------------- | ------- | -------- | --------------------------------------------- |
+| `12345678901234` | `12345` | 12345    | Full data: two years of transactions, 2 goals |
+| `23456789012345` | `23456` | 23456    | Empty states: a new customer with no activity |
+| `34567890123456` | `34567` | 34567    | Error states: spending endpoints return 500   |
+
+These are defined in `src/mocks/fixtures.ts` (`MOCK_USERS`). Sign-in calls
+`POST /api/auth/sign-in`; any other combination returns 401. The session is
+kept in `sessionStorage`, so it ends when the tab closes.
+
+### Spending page filters
+
+Each control only offers what its endpoint accepts:
+
+| Control                    | Endpoint               | Parameters                    |
+| -------------------------- | ---------------------- | ----------------------------- |
+| Period buttons             | `/spending/summary`    | `period`                      |
+|                            | `/spending/categories` | `period`                      |
+| Trend length picker        | `/spending/trends`     | `months` (3, 6, 12, 24)       |
+| Category card custom dates | `/spending/categories` | `startDate`, `endDate`        |
+| Category chips             | none (display filter)  | filters the categories result |
+
+The period presets and the category chips come from `/filters`. Filters are
+kept in the URL (`?period=90d&months=24&from=…&to=…&categories=Dining`).
 
 ## Testing
 

@@ -1,6 +1,8 @@
-import { useEffect, useId, useRef, useState, type SubmitEvent } from "react";
+import { useId, useRef, useState, type SubmitEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { LuArrowRight, LuEye, LuEyeOff, LuX } from "react-icons/lu";
+import { ApiError } from "../../api/client";
+import { useModal } from "../../lib/useModal";
 import {
   ACCOUNT_NUMBER_LENGTH,
   PIN_LENGTH,
@@ -12,7 +14,8 @@ import {
 type SignInDialogProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: SignInValues) => void;
+  /** Signs in; the dialog shows a message if the promise rejects. */
+  onSubmit: (values: SignInValues) => Promise<unknown>;
 };
 
 const EMPTY_VALUES: SignInValues = { accountNumber: "", pin: "" };
@@ -40,40 +43,42 @@ function SignInDialogPanel({
   const [errors, setErrors] = useState<SignInErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [showPin, setShowPin] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [submitError, setSubmitError] = useState<
+    "signIn.errors.invalidCredentials" | "signIn.errors.generic" | null
+  >(null);
 
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    accountInputRef.current?.focus();
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-      previouslyFocused?.focus();
-    };
-  }, [onClose]);
+  useModal(onClose, accountInputRef);
 
   const updateField = (field: keyof SignInValues, value: string) => {
     const next = { ...values, [field]: value };
     setValues(next);
+    setSubmitError(null);
     if (submitted) setErrors(validateSignIn(next));
   };
 
-  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (pending) return;
     setSubmitted(true);
+    setSubmitError(null);
 
     const nextErrors = validateSignIn(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    onSubmit(values);
-    onClose();
+    setPending(true);
+    try {
+      // On success the parent navigates away, which unmounts this dialog.
+      await onSubmit(values);
+    } catch (error) {
+      setSubmitError(
+        error instanceof ApiError && error.status === 401
+          ? "signIn.errors.invalidCredentials"
+          : "signIn.errors.generic",
+      );
+      setPending(false);
+    }
   };
 
   const inputClass = (hasError: boolean) =>
@@ -206,11 +211,22 @@ function SignInDialogPanel({
             </p>
           </div>
 
+          {submitError && (
+            <p
+              role="alert"
+              className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700"
+            >
+              {t(submitError)}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="mt-1 inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-7 py-3 font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-dark"
+            disabled={pending}
+            aria-busy={pending}
+            className="mt-1 inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-7 py-3 font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-dark disabled:cursor-wait disabled:opacity-70"
           >
-            {t("signIn.submit")}
+            {pending ? t("signIn.submitting") : t("signIn.submit")}
             <LuArrowRight className="size-5" aria-hidden />
           </button>
         </form>

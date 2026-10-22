@@ -32,13 +32,167 @@
     "showPin": "Show PIN",
     "hidePin": "Hide PIN",
     "submit": "Sign in",
+    "submitting": "Signing in…",
     "close": "Close sign in",
     "noAccount": "Don't have an account?",
     "errors": {
       "accountNumberRequired": "Please enter your account number.",
       "accountNumberInvalid": "Account number must be exactly 14 digits.",
       "pinRequired": "Please enter your PIN.",
-      "pinInvalid": "PIN must be exactly 5 digits."
+      "pinInvalid": "PIN must be exactly 5 digits.",
+      "invalidCredentials": "Incorrect account number or PIN. Please try again.",
+      "generic": "We couldn't sign you in right now. Please try again."
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "label": "Dashboard",
+      "overview": "Overview",
+      "spending": "Spending",
+      "transactions": "Transactions",
+      "goals": "Goals",
+      "profile": "Profile",
+      "signOut": "Sign out",
+      "openMenu": "Open navigation",
+      "closeMenu": "Close navigation"
+    },
+    "topBar": {
+      "notifications": "Notifications",
+      "account": "Signed in as {{name}}"
+    },
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}",
+      "subtitle": "Here's your spending overview for your Moya Bank account."
+    },
+    "accountType": {
+      "label": "Account type",
+      "premium": "Premium Account",
+      "standard": "Standard Account",
+      "business": "Business Account"
+    },
+    "stats": {
+      "heading": "Last 30 days at a glance",
+      "totalSpent": "Total spent",
+      "transactionCount": "Transaction count",
+      "averageTransaction": "Average transaction",
+      "spendingChange": "Spending change",
+      "vsPrevious": "vs. previous 30 days",
+      "perTransaction": "Per transaction, last 30 days",
+      "increase": "Up",
+      "decrease": "Down",
+      "noChange": "No change"
+    },
+    "trend": {
+      "title": "Monthly spending trend",
+      "months3": "Last 3 months",
+      "chartLabel": "Line chart of total spending per month",
+      "month": "Month",
+      "spent": "Spent",
+      "empty": "No spending to chart yet. Your monthly totals will appear here."
+    },
+    "categories": {
+      "title": "Spending by category",
+      "chartLabel": "Donut chart of spending by category, last 30 days",
+      "totalSpent": "Total spent",
+      "category": "Category",
+      "share": "Share",
+      "amount": "Amount",
+      "empty": "No spending in the last 30 days, so there's nothing to break down yet.",
+      "period": "Last 30 days"
+    },
+    "recent": {
+      "title": "Recent transactions",
+      "date": "Date",
+      "merchant": "Merchant",
+      "category": "Category",
+      "paymentMethod": "Payment method",
+      "amount": "Amount",
+      "viewAll": "View all",
+      "viewDetails": "view details",
+      "empty": "No transactions yet. Your purchases will appear here.",
+      "lastCount_one": "Last transaction",
+      "lastCount_other": "Last {{count}} transactions"
+    },
+    "transaction": {
+      "title": "Transaction details",
+      "close": "Close transaction details",
+      "expand": "Expand details",
+      "collapse": "Collapse details",
+      "amount": "Amount",
+      "date": "Date and time",
+      "category": "Category",
+      "description": "Description",
+      "paymentMethod": "Payment method",
+      "reference": "Transaction ID"
+    },
+    "states": {
+      "errorTitle": "We couldn't load this",
+      "errorBody": "Something went wrong on our side. Please try again.",
+      "retry": "Try again",
+      "loading": "Loading…",
+      "emptyTitle": "Nothing here yet"
+    },
+    "comingSoon": "This page is coming soon."
+  },
+  "spending": {
+    "title": "Spending analysis",
+    "subtitle": "See where your money goes and how it changes over time.",
+    "filters": {
+      "label": "Filters"
+    },
+    "periods": {
+      "label": "Time period",
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+      "1y": "1 year"
+    },
+    "customRange": {
+      "open": "Choose dates for the category breakdown",
+      "title": "Custom dates",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "errors": {
+        "required": "Choose both a start and an end date.",
+        "order": "The start date must be on or before the end date.",
+        "future": "Dates can't be in the future."
+      },
+      "hint": "Applies to the category breakdown only.",
+      "clear": "Use selected period"
+    },
+    "trend": {
+      "range": "Trend length",
+      "months3": "Last 3 months",
+      "months6": "Last 6 months",
+      "months12": "Last 12 months",
+      "months24": "Last 24 months"
+    },
+    "summary": {
+      "title": "Spending summary",
+      "totalSpent": "Total spent",
+      "vsPrevious": "vs. the previous {{days}} days",
+      "transactions": "Transactions",
+      "average": "Average transaction",
+      "topCategory": "Top category",
+      "none": "None"
+    },
+    "categories": {
+      "title": "Category breakdown",
+      "filterLabel": "Show categories",
+      "all": "All",
+      "category": "Category",
+      "amount": "Amount",
+      "percentage": "Percentage",
+      "transactions": "Transactions",
+      "chartLabel": "Donut chart of spending by category for the selected dates",
+      "total": "Total spent",
+      "selectedTotal": "Selected total",
+      "empty": "No spending in these dates, so there's nothing to break down.",
+      "noneSelected": "No spending in the selected categories for these dates."
     }
   },
   "features": {

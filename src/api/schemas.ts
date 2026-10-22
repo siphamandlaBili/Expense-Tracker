@@ -143,3 +143,9 @@ export const filtersSchema = z.object({
 export type Filters = z.infer<typeof filtersSchema>;
 
 export const apiErrorBodySchema = z.object({ message: z.string() });
+
+export const signInResponseSchema = z.object({
+  customerId: z.string(),
+  name: z.string(),
+});
+export type SignInResponse = z.infer<typeof signInResponseSchema>;

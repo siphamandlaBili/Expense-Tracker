@@ -40,6 +40,8 @@ export function useSpendingSummary(customerId: string, period?: Period) {
     queryKey: queryKeys.summary(customerId, period),
     queryFn: ({ signal }) =>
       customersApi.getSpendingSummary(customerId, period, signal),
+    // Keep the current figures visible while another period loads.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -51,6 +53,9 @@ export function useSpendingByCategory(
     queryKey: queryKeys.categories(customerId, params),
     queryFn: ({ signal }) =>
       customersApi.getSpendingByCategory(customerId, params, signal),
+    // Keep the current breakdown (and its date range) visible while a new
+    // period loads, instead of flashing empty.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -59,6 +64,8 @@ export function useSpendingTrends(customerId: string, months?: number) {
     queryKey: queryKeys.trends(customerId, months),
     queryFn: ({ signal }) =>
       customersApi.getSpendingTrends(customerId, months, signal),
+    // Keep the current chart visible while a new range loads.
+    placeholderData: keepPreviousData,
   });
 }
 

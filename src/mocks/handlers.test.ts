@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../api/client";
+import { authApi } from "../api/auth";
 import { customersApi } from "../api/customers";
 import { resetDb } from "./db";
-import { CUSTOMER_ID } from "./fixtures";
+import { CUSTOMER_ID, EMPTY_USER, ERROR_USER, MOCK_USERS } from "./fixtures";
 import { TEST_NOW } from "../test/constants";
 
 // Exercises the mock API through the real client, so these tests cover the
@@ -268,5 +269,70 @@ describe("mock API: filters", () => {
       "90d",
       "1y",
     ]);
+  });
+});
+
+describe("mock API: sign in", () => {
+  it.each(MOCK_USERS)(
+    "signs in $profile.name ($scenario)",
+    async ({ accountNumber, pin, customerId, profile }) => {
+      await expect(authApi.signIn({ accountNumber, pin })).resolves.toEqual({
+        customerId,
+        name: profile.name,
+      });
+    },
+  );
+
+  it("rejects a wrong PIN or unknown account with 401", async () => {
+    await expectApiError(
+      authApi.signIn({
+        accountNumber: MOCK_USERS[0].accountNumber,
+        pin: "00000",
+      }),
+      401,
+    );
+    await expectApiError(
+      authApi.signIn({ accountNumber: "99999999999999", pin: "12345" }),
+      401,
+    );
+  });
+});
+
+describe("mock API: scenarios", () => {
+  it("returns empty data for the customer with no transactions", async () => {
+    const id = EMPTY_USER.customerId;
+
+    const summary = await api.getSpendingSummary(id);
+    expect(summary).toMatchObject({
+      totalSpent: 0,
+      transactionCount: 0,
+      topCategory: null,
+    });
+    expect((await api.getSpendingByCategory(id)).categories).toEqual([]);
+    expect((await api.getTransactions(id)).pagination.total).toBe(0);
+    expect((await api.getGoals(id)).goals).toEqual([]);
+    const { trends } = await api.getSpendingTrends(id, 3);
+    expect(trends.every((month) => month.totalSpent === 0)).toBe(true);
+  });
+
+  it("fails spending endpoints with 500 but keeps the profile working for the error customer", async () => {
+    const id = ERROR_USER.customerId;
+
+    await expect(api.getProfile(id)).resolves.toMatchObject({
+      name: "Pieter van Wyk",
+    });
+    await expectApiError(api.getSpendingSummary(id), 500);
+    await expectApiError(api.getTransactions(id), 500);
+    await expectApiError(api.getGoals(id), 500);
+  });
+
+  it("keeps each customer's goals separate", async () => {
+    await api.createGoal(EMPTY_USER.customerId, {
+      category: "Dining",
+      monthlyBudget: 500,
+    });
+
+    const active = await api.getGoals(CUSTOMER_ID);
+    expect(active.goals.map((g) => g.category)).not.toContain("Dining");
   });
 });

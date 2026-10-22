@@ -9,12 +9,15 @@ import userEvent from "@testing-library/user-event";
 import type { ReactElement, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { AppProviders } from "../app/AppProviders";
+import { writeSession, type Session } from "../auth/session";
 import { testI18n } from "./i18n";
 
 type ProviderOptions = {
   /** Initial URL for the in-memory router. */
   route?: string;
   queryClient?: QueryClient;
+  /** Render as this signed-in user (see MOCK_USERS). */
+  session?: Session;
 };
 
 export function createTestQueryClient() {
@@ -29,7 +32,10 @@ export function createTestQueryClient() {
 function createWrapper({
   route = "/",
   queryClient = createTestQueryClient(),
+  session,
 }: ProviderOptions) {
+  // Written before render so AuthProvider starts signed in.
+  if (session) writeSession(session);
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <AppProviders queryClient={queryClient} i18n={testI18n}>
@@ -49,12 +55,14 @@ export function renderWithProviders(
   {
     route,
     queryClient: client,
+    session,
     ...options
   }: Omit<RenderOptions, "wrapper"> & ProviderOptions = {},
 ) {
   const { Wrapper, queryClient } = createWrapper({
     route,
     queryClient: client,
+    session,
   });
   const user = userEvent.setup();
 
@@ -71,12 +79,14 @@ export function renderHookWithProviders<Result, Props>(
   {
     route,
     queryClient: client,
+    session,
     ...options
   }: Omit<RenderHookOptions<Props>, "wrapper"> & ProviderOptions = {},
 ) {
   const { Wrapper, queryClient } = createWrapper({
     route,
     queryClient: client,
+    session,
   });
 
   return {

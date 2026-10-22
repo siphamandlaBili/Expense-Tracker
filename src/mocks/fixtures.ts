@@ -1,15 +1,95 @@
 import type { CategoryMeta, Filters } from "../api/schemas";
 
-export const CUSTOMER_ID = "12345";
-
-export const profileFixture = {
-  customerId: CUSTOMER_ID,
-  name: "John Doe",
-  email: "john.doe@email.com",
-  joinDate: "2023-01-15",
-  accountType: "premium",
-  currency: "ZAR",
+/** Goals as stored; progress fields are derived from transactions. */
+export type StoredGoal = {
+  id: string;
+  category: string;
+  monthlyBudget: number;
 };
+
+/**
+ * - active: two years of transactions and two goals.
+ * - empty:  a new customer with no transactions or goals (empty states).
+ * - error:  signs in, but every spending endpoint returns 500 (error states).
+ */
+export type MockScenario = "active" | "empty" | "error";
+
+export type MockUser = {
+  customerId: string;
+  accountNumber: string;
+  pin: string;
+  scenario: MockScenario;
+  profile: {
+    name: string;
+    email: string;
+    joinDate: string;
+    accountType: string;
+    currency: string;
+  };
+  goals: StoredGoal[];
+};
+
+// Demo sign-in credentials. Not secrets: they only unlock mock data.
+export const MOCK_USERS: MockUser[] = [
+  {
+    customerId: "12345",
+    accountNumber: "12345678901234",
+    pin: "12345",
+    scenario: "active",
+    profile: {
+      name: "John Doe",
+      email: "john.doe@email.com",
+      joinDate: "2023-01-15",
+      accountType: "premium",
+      currency: "ZAR",
+    },
+    goals: [
+      { id: "goal_001", category: "Entertainment", monthlyBudget: 1000 },
+      { id: "goal_002", category: "Groceries", monthlyBudget: 1500 },
+    ],
+  },
+  {
+    customerId: "23456",
+    accountNumber: "23456789012345",
+    pin: "23456",
+    scenario: "empty",
+    profile: {
+      name: "Thandi Nkosi",
+      email: "thandi.nkosi@email.com",
+      joinDate: "2024-09-01",
+      accountType: "standard",
+      currency: "ZAR",
+    },
+    goals: [],
+  },
+  {
+    customerId: "34567",
+    accountNumber: "34567890123456",
+    pin: "34567",
+    scenario: "error",
+    profile: {
+      name: "Pieter van Wyk",
+      email: "pieter.vanwyk@email.com",
+      joinDate: "2022-06-20",
+      accountType: "business",
+      currency: "ZAR",
+    },
+    goals: [],
+  },
+];
+
+const userWithScenario = (scenario: MockScenario) =>
+  MOCK_USERS.find((user) => user.scenario === scenario) as MockUser;
+
+export const ACTIVE_USER = userWithScenario("active");
+export const EMPTY_USER = userWithScenario("empty");
+export const ERROR_USER = userWithScenario("error");
+
+/** The customer with data; the default in tests. */
+export const CUSTOMER_ID = ACTIVE_USER.customerId;
+
+export const findUser = (customerId: string) =>
+  MOCK_USERS.find((user) => user.customerId === customerId);
 
 export const categoriesFixture: CategoryMeta[] = [
   { name: "Groceries", color: "#FF6B6B", icon: "shopping-cart" },
@@ -25,18 +105,6 @@ export const dateRangePresetsFixture: Filters["dateRangePresets"] = [
   { label: "Last 30 days", value: "30d" },
   { label: "Last 90 days", value: "90d" },
   { label: "Last year", value: "1y" },
-];
-
-/** Goals as stored; progress fields are derived from transactions. */
-export type StoredGoal = {
-  id: string;
-  category: string;
-  monthlyBudget: number;
-};
-
-export const goalsFixture: StoredGoal[] = [
-  { id: "goal_001", category: "Entertainment", monthlyBudget: 1000 },
-  { id: "goal_002", category: "Groceries", monthlyBudget: 1500 },
 ];
 
 type Merchant = {

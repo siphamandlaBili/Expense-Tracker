@@ -2,6 +2,7 @@ import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import type { i18n as I18n } from "i18next";
 import type { ReactNode } from "react";
 import { I18nextProvider } from "react-i18next";
+import { AuthProvider } from "../auth/AuthProvider";
 
 type AppProvidersProps = {
   queryClient: QueryClient;
@@ -20,7 +21,9 @@ export function AppProviders({
 }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+      <I18nextProvider i18n={i18n}>
+        <AuthProvider>{children}</AuthProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 }

@@ -1,5 +1,9 @@
-import { screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  screen,
+  waitForElementToBeRemoved,
+  within,
+} from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import App from "../../App";
 import { readSession } from "../../auth/session";
 import { expectNoA11yViolations } from "../../test/axe";
@@ -72,6 +76,29 @@ describe("Dashboard layout", () => {
       }),
     ).toBeInTheDocument();
     expect(readSession()).toBeNull();
+  });
+
+  it("slides the navigation drawer out before removing it", async () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    const { user } = renderWithProviders(<App />, {
+      route: "/dashboard",
+      session: sessions.active,
+    });
+
+    await user.click(screen.getByRole("button", { name: /open navigation/i }));
+    const drawerNav = screen.getAllByRole("navigation", {
+      name: "Dashboard",
+    })[1];
+
+    await user.click(screen.getByRole("button", { name: /close navigation/i }));
+
+    // Still on screen while it slides out, then removed.
+    expect(drawerNav).toBeInTheDocument();
+    await waitForElementToBeRemoved(drawerNav);
   });
 
   it("opens and closes the mobile navigation drawer", async () => {

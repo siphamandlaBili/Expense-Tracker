@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { CategoryParams } from "../api/customers";
 import { isoDateSchema, periodSchema, type Period } from "../api/schemas";
+import type { DateRange } from "./dateRange";
 
 /**
  * Spending page filters, shaped by what each endpoint accepts:
@@ -19,9 +20,6 @@ export type SpendingFilters = {
   /** Categories to show; empty means all. */
   categories: string[];
 };
-
-/** Inclusive YYYY-MM-DD range. */
-export type DateRange = { startDate: string; endDate: string };
 
 export const DEFAULT_PERIOD: Period = "30d";
 

@@ -2,11 +2,11 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { CategoryMeta, SpendingByCategory } from "../../api/schemas";
 import { formatCount, formatCurrency, formatPercent } from "../../lib/format";
-import type { DateRange } from "../../lib/spendingFilters";
+import type { DateRange } from "../../lib/dateRange";
 import { CategoryDonut } from "../charts/CategoryDonut";
 import { CategoryBadge } from "../dashboard/CategoryBadge";
+import { DateRangePicker } from "../dashboard/DateRangePicker";
 import { EmptyState, Panel, QueryContent, Skeleton } from "../dashboard/Panel";
-import { DateRangePicker } from "./DateRangePicker";
 
 type CategoryAnalysisCardProps = {
   query: UseQueryResult<SpendingByCategory>;
@@ -75,6 +75,8 @@ export function CategoryAnalysisCard({
             </button>
           )}
           <DateRangePicker
+            label={t("spending.customRange.open")}
+            hint={t("spending.customRange.hint")}
             dates={customDates ?? query.data?.dateRange}
             active={Boolean(customDates)}
             onApply={onCustomDatesChange}

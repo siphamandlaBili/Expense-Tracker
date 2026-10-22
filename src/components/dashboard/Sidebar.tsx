@@ -81,13 +81,17 @@ function SidebarContent({ onNavigate, onSignOut }: SidebarContentProps) {
 }
 
 type SidebarProps = {
+  /** The mobile drawer is in the DOM (including while it slides out). */
   mobileOpen: boolean;
+  /** The mobile drawer is playing its exit animation. */
+  mobileClosing: boolean;
   onCloseMobile: () => void;
   onSignOut: () => void;
 };
 
 export function Sidebar({
   mobileOpen,
+  mobileClosing,
   onCloseMobile,
   onSignOut,
 }: SidebarProps) {
@@ -109,17 +113,18 @@ export function Sidebar({
         <SidebarContent onSignOut={onSignOut} />
       </aside>
 
-      {/* Mobile: a drawer, only in the DOM while open. */}
+      {/* Mobile: a drawer that slides in from the left, only in the DOM
+          while open or sliding out. */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
             aria-hidden
-            className="absolute inset-0 bg-heading/40"
+            className={`absolute inset-0 bg-heading/40 motion-reduce:animate-none ${mobileClosing ? "animate-fade-out" : "animate-fade-in"}`}
             onClick={onCloseMobile}
           />
           <aside
             id="dashboard-drawer"
-            className="relative h-full w-72 max-w-[85%] bg-white shadow-xl"
+            className={`relative h-full w-72 max-w-[85%] bg-white shadow-xl motion-reduce:animate-none ${mobileClosing ? "animate-nav-out" : "animate-nav-in"}`}
           >
             <button
               type="button"

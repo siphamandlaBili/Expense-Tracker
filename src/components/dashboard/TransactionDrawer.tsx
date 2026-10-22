@@ -4,6 +4,7 @@ import { LuX } from "react-icons/lu";
 import type { Transaction } from "../../api/schemas";
 import { formatCurrency, formatDateTime } from "../../lib/format";
 import { useBottomSheet } from "../../lib/useBottomSheet";
+import { EXIT_ANIMATION_MS, prefersReducedMotion } from "../../lib/motion";
 import { useMediaQuery } from "../../lib/useMediaQuery";
 import { useModal } from "../../lib/useModal";
 import { CategoryBadge } from "./CategoryBadge";
@@ -13,13 +14,6 @@ type TransactionDrawerProps = {
   currency?: string;
   onClose: () => void;
 };
-
-/** Matches the "out" animation durations in App.css. */
-const SHEET_EXIT_MS = 200;
-
-const prefersReducedMotion = () =>
-  // No matchMedia (e.g. jsdom) means we can't animate reliably: skip it.
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? true;
 
 /** Every field the API returns for a transaction, in a drawer. */
 export function TransactionDrawer({
@@ -39,7 +33,7 @@ export function TransactionDrawer({
       return;
     }
     setClosing(true);
-    window.setTimeout(onClose, SHEET_EXIT_MS);
+    window.setTimeout(onClose, EXIT_ANIMATION_MS);
   }, [onClose]);
 
   useModal(requestClose, closeRef);

@@ -134,7 +134,27 @@
       "loading": "Loading…",
       "emptyTitle": "Nothing here yet"
     },
-    "comingSoon": "This page is coming soon."
+    "comingSoon": "This page is coming soon.",
+    "dateRange": {
+      "title": "Custom dates",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "errors": {
+        "required": "Choose both a start and an end date.",
+        "order": "The start date must be on or before the end date.",
+        "future": "Dates can't be in the future."
+      }
+    },
+    "pagination": {
+      "label": "Pagination",
+      "showing": "Showing {{from}}–{{to}} of {{total}}",
+      "page": "Page {{page}} of {{count}}",
+      "previous": "Previous page",
+      "next": "Next page",
+      "pageSize": "Rows per page"
+    }
   },
   "spending": {
     "title": "Spending analysis",
@@ -151,16 +171,6 @@
     },
     "customRange": {
       "open": "Choose dates for the category breakdown",
-      "title": "Custom dates",
-      "from": "From",
-      "to": "To",
-      "apply": "Apply",
-      "cancel": "Cancel",
-      "errors": {
-        "required": "Choose both a start and an end date.",
-        "order": "The start date must be on or before the end date.",
-        "future": "Dates can't be in the future."
-      },
       "hint": "Applies to the category breakdown only.",
       "clear": "Use selected period"
     },
@@ -194,6 +204,28 @@
       "empty": "No spending in these dates, so there's nothing to break down.",
       "noneSelected": "No spending in the selected categories for these dates."
     }
+  },
+  "transactions": {
+    "title": "Transactions",
+    "subtitle": "Browse, filter and sort your full transaction history.",
+    "listTitle": "All transactions",
+    "filters": {
+      "label": "Filter transactions",
+      "category": "Category",
+      "allCategories": "All categories",
+      "dates": "Dates",
+      "chooseDates": "Choose dates",
+      "sort": "Sort by",
+      "clear": "Clear filters"
+    },
+    "sort": {
+      "date_desc": "Newest first",
+      "date_asc": "Oldest first",
+      "amount_desc": "Highest amount",
+      "amount_asc": "Lowest amount"
+    },
+    "empty": "No transactions yet. Your purchases will appear here.",
+    "noMatches": "No transactions match these filters."
   },
   "features": {
     "heading": "Features",

@@ -5,6 +5,7 @@ import { ComingSoonPage } from "./pages/dashboard/ComingSoonPage";
 import { DashboardLayout } from "./pages/dashboard/DashboardLayout";
 import { OverviewPage } from "./pages/dashboard/OverviewPage";
 import { SpendingPage } from "./pages/dashboard/SpendingPage";
+import { TransactionsPage } from "./pages/dashboard/TransactionsPage";
 import { LandingPage } from "./pages/LandingPage";
 
 function App() {
@@ -23,10 +24,7 @@ function App() {
       >
         <Route index element={<OverviewPage />} />
         <Route path="spending" element={<SpendingPage />} />
-        <Route
-          path="transactions"
-          element={<ComingSoonPage title={t("dashboard.nav.transactions")} />}
-        />
+        <Route path="transactions" element={<TransactionsPage />} />
         <Route
           path="goals"
           element={<ComingSoonPage title={t("dashboard.nav.goals")} />}

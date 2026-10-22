@@ -102,6 +102,19 @@ Each control only offers what its endpoint accepts:
 The period presets and the category chips come from `/filters`. Filters are
 kept in the URL (`?period=90d&months=24&from=…&to=…&categories=Dining`).
 
+### Transactions page filters
+
+| Control           | `/transactions` parameter           |
+| ----------------- | ----------------------------------- |
+| Category dropdown | `category` (one category)           |
+| Date picker       | `startDate`, `endDate`              |
+| Sort dropdown     | `sortBy` (date or amount, asc/desc) |
+| Rows per page     | `limit` (10, 20 or 50)              |
+| Previous / next   | `offset`; totals from `pagination`  |
+
+Any filter change returns to page 1; a page past the end moves to the last
+page. The view is kept in the URL (`?category=Dining&page=2&size=10`).
+
 ## Testing
 
 ### Layers

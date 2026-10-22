@@ -1,38 +1,34 @@
 import { useEffect, useId, useRef, useState, type SubmitEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { LuCalendar, LuChevronDown } from "react-icons/lu";
+import {
+  todayIso,
+  validateDateRange,
+  type DateRange,
+  type DateRangeError,
+} from "../../lib/dateRange";
 import { formatDayLong } from "../../lib/format";
-import type { DateRange } from "../../lib/spendingFilters";
 
 type DateRangePickerProps = {
+  /** What the dates apply to, e.g. "Choose dates"; the button's name. */
+  label: string;
+  /** Optional note in the picker about what the dates affect. */
+  hint?: string;
   /** The dates currently shown (button label and the picker's start value). */
   dates?: DateRange;
-  /** True when custom dates are in use (vs. the page's period). */
+  /** True when the dates are a filter the user chose (highlights the button). */
   active: boolean;
   onApply: (range: DateRange) => void;
 };
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
-
-type RangeError =
-  | "spending.customRange.errors.required"
-  | "spending.customRange.errors.order"
-  | "spending.customRange.errors.future";
-
-function validateRange(from: string, to: string): RangeError | null {
-  if (!from || !to) return "spending.customRange.errors.required";
-  if (from > to) return "spending.customRange.errors.order";
-  if (to > todayIso()) return "spending.customRange.errors.future";
-  return null;
-}
-
 /** Button showing a date range, opening a from/to picker. */
 export function DateRangePicker({
+  label,
+  hint,
   dates,
   active,
   onApply,
 }: DateRangePickerProps) {
-  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -51,17 +47,18 @@ export function DateRangePicker({
         <LuCalendar className="size-4" aria-hidden />
         {dates ? (
           <span>
-            <span className="sr-only">{t("spending.customRange.open")}: </span>
+            <span className="sr-only">{label}: </span>
             {formatDayLong(dates.startDate)} – {formatDayLong(dates.endDate)}
           </span>
         ) : (
-          t("spending.customRange.open")
+          label
         )}
         <LuChevronDown className="size-4" aria-hidden />
       </button>
 
       {open && (
         <DateRangePopover
+          hint={hint}
           initial={dates}
           onApply={(range) => {
             onApply(range);
@@ -75,10 +72,12 @@ export function DateRangePicker({
 }
 
 function DateRangePopover({
+  hint,
   initial,
   onApply,
   onClose,
 }: {
+  hint?: string;
   initial?: DateRange;
   onApply: (range: DateRange) => void;
   onClose: () => void;
@@ -92,7 +91,7 @@ function DateRangePopover({
   const fromRef = useRef<HTMLInputElement>(null);
   const [from, setFrom] = useState(initial?.startDate ?? "");
   const [to, setTo] = useState(initial?.endDate ?? "");
-  const [error, setError] = useState<RangeError | null>(null);
+  const [error, setError] = useState<DateRangeError | null>(null);
 
   // Focus the first field; close on Escape or a click outside.
   useEffect(() => {
@@ -113,7 +112,7 @@ function DateRangePopover({
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const problem = validateRange(from, to);
+    const problem = validateDateRange(from, to);
     setError(problem);
     if (!problem) onApply({ startDate: from, endDate: to });
   };
@@ -126,15 +125,17 @@ function DateRangePopover({
       ref={panelRef}
       role="dialog"
       aria-labelledby={titleId}
-      aria-describedby={hintId}
+      aria-describedby={hint ? hintId : undefined}
       className="absolute right-0 z-30 mt-2 w-72 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xl"
     >
       <h2 id={titleId} className="font-semibold text-heading">
-        {t("spending.customRange.title")}
+        {t("dashboard.dateRange.title")}
       </h2>
-      <p id={hintId} className="mt-0.5 text-xs text-body">
-        {t("spending.customRange.hint")}
-      </p>
+      {hint && (
+        <p id={hintId} className="mt-0.5 text-xs text-body">
+          {hint}
+        </p>
+      )}
       <form noValidate onSubmit={handleSubmit} className="mt-3 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -142,7 +143,7 @@ function DateRangePopover({
               htmlFor={fromId}
               className="mb-1 block text-xs font-medium text-heading"
             >
-              {t("spending.customRange.from")}
+              {t("dashboard.dateRange.from")}
             </label>
             <input
               ref={fromRef}
@@ -159,7 +160,7 @@ function DateRangePopover({
               htmlFor={toId}
               className="mb-1 block text-xs font-medium text-heading"
             >
-              {t("spending.customRange.to")}
+              {t("dashboard.dateRange.to")}
             </label>
             <input
               id={toId}
@@ -184,13 +185,13 @@ function DateRangePopover({
             onClick={onClose}
             className="rounded-full px-4 py-1.5 text-sm font-medium text-body hover:bg-dashboard"
           >
-            {t("spending.customRange.cancel")}
+            {t("dashboard.dateRange.cancel")}
           </button>
           <button
             type="submit"
             className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
           >
-            {t("spending.customRange.apply")}
+            {t("dashboard.dateRange.apply")}
           </button>
         </div>
       </form>

@@ -72,11 +72,13 @@ export function useSpendingTrends(customerId: string, months?: number) {
 export function useTransactions(
   customerId: string,
   filters: TransactionFilters = {},
+  { enabled = true }: { enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: queryKeys.transactions(customerId, filters),
     queryFn: ({ signal }) =>
       customersApi.getTransactions(customerId, filters, signal),
+    enabled,
     // Keep the current page on screen while the next one loads.
     placeholderData: keepPreviousData,
   });

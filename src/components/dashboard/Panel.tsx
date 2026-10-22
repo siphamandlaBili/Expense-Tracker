@@ -1,5 +1,5 @@
 import type { UseQueryResult } from "@tanstack/react-query";
-import { useId, type ReactNode } from "react";
+import { useId, type ReactNode, type Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { LuInbox, LuRefreshCw, LuTriangleAlert } from "react-icons/lu";
 
@@ -8,15 +8,23 @@ type PanelProps = {
   /** Control shown at the top right, e.g. a range selector or link. */
   action?: ReactNode;
   className?: string;
+  ref?: Ref<HTMLElement>;
   children: ReactNode;
 };
 
-/** White rounded card with a heading; every overview widget sits in one. */
-export function Panel({ title, action, className = "", children }: PanelProps) {
+/** White rounded card with a heading; every dashboard widget sits in one. */
+export function Panel({
+  title,
+  action,
+  className = "",
+  ref,
+  children,
+}: PanelProps) {
   const headingId = useId();
 
   return (
     <section
+      ref={ref}
       aria-labelledby={headingId}
       className={`flex flex-col rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 ${className}`}
     >

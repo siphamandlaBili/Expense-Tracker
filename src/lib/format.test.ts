@@ -10,7 +10,6 @@ import {
   formatMonthLong,
   formatMonthShort,
   formatPercent,
-  initials,
 } from "./format";
 
 describe("format", () => {
@@ -44,9 +43,8 @@ describe("format", () => {
     expect(formatMonthLong("2024-05")).toBe("May 2024");
   });
 
-  it("derives first names and initials", () => {
+  it("derives first names", () => {
     expect(firstName("  John Doe ")).toBe("John");
-    expect(initials("Pieter van Wyk")).toBe("PV");
   });
 });
 

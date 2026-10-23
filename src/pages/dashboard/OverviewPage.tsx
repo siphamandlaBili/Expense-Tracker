@@ -15,6 +15,7 @@ import { RecentTransactionsCard } from "../../components/dashboard/RecentTransac
 import { SpendingTrendCard } from "../../components/dashboard/SpendingTrendCard";
 import { StatCards } from "../../components/dashboard/StatCards";
 import { firstName } from "../../lib/format";
+import { useAccountTypeLabel } from "../../lib/useAccountTypeLabel";
 
 // The overview is a summary: a short trend. Longer ranges belong on Spending.
 const TREND_MONTHS = 3;
@@ -25,12 +26,6 @@ const RECENT_TRANSACTIONS = {
   sortBy: "date_desc",
 } as const;
 
-const KNOWN_ACCOUNT_TYPES = ["premium", "standard", "business"] as const;
-type KnownAccountType = (typeof KNOWN_ACCOUNT_TYPES)[number];
-
-const isKnownAccountType = (type: string): type is KnownAccountType =>
-  (KNOWN_ACCOUNT_TYPES as readonly string[]).includes(type);
-
 function greetingKey(hour: number) {
   if (hour < 12) return "dashboard.greeting.morning" as const;
   if (hour < 18) return "dashboard.greeting.afternoon" as const;
@@ -40,6 +35,7 @@ function greetingKey(hour: number) {
 export function OverviewPage() {
   const { t } = useTranslation();
   const { customerId, name } = useSession();
+  const accountTypeLabel = useAccountTypeLabel();
 
   const profile = useProfile(customerId);
   const summary = useSpendingSummary(customerId, "30d");
@@ -69,9 +65,7 @@ export function OverviewPage() {
                 </p>
                 {accountType ? (
                   <p className="font-medium text-heading">
-                    {isKnownAccountType(accountType)
-                      ? t(`dashboard.accountType.${accountType}`)
-                      : accountType}
+                    {accountTypeLabel(accountType)}
                   </p>
                 ) : (
                   <Skeleton className="mt-1 h-4 w-32" />

@@ -1,14 +1,23 @@
 import { useTranslation } from "react-i18next";
-import { LuBell, LuMenu } from "react-icons/lu";
-import { initials } from "../../lib/format";
+import { LuMenu } from "react-icons/lu";
+import { AccountMenu } from "./AccountMenu";
+import { NotificationsMenu } from "./NotificationsMenu";
 
 type TopBarProps = {
   name: string;
+  email?: string;
+  onSignOut: () => void;
   menuOpen: boolean;
   onOpenMenu: () => void;
 };
 
-export function TopBar({ name, menuOpen, onOpenMenu }: TopBarProps) {
+export function TopBar({
+  name,
+  email,
+  onSignOut,
+  menuOpen,
+  onOpenMenu,
+}: TopBarProps) {
   const { t } = useTranslation();
 
   return (
@@ -25,21 +34,8 @@ export function TopBar({ name, menuOpen, onOpenMenu }: TopBarProps) {
       </button>
 
       <div className="ml-auto flex items-center gap-2">
-        <button
-          type="button"
-          aria-label={t("dashboard.topBar.notifications")}
-          className="rounded-full p-2 text-heading hover:bg-white hover:text-primary"
-        >
-          <LuBell className="size-5" aria-hidden />
-        </button>
-        <span
-          role="img"
-          aria-label={t("dashboard.topBar.account", { name })}
-          title={name}
-          className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white"
-        >
-          {initials(name)}
-        </span>
+        <NotificationsMenu />
+        <AccountMenu name={name} email={email} onSignOut={onSignOut} />
       </div>
     </header>
   );

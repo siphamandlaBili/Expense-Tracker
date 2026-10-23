@@ -1,7 +1,7 @@
-import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import { formatCount } from "../../lib/format";
+import { Select } from "./Select";
 
 type PaginationProps = {
   /** 1-based current page. */
@@ -29,7 +29,6 @@ export function Pagination({
   onPageSizeChange,
 }: PaginationProps) {
   const { t } = useTranslation();
-  const sizeId = useId();
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const last = (page - 1) * pageSize + shown;
 
@@ -51,21 +50,21 @@ export function Pagination({
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <label htmlFor={sizeId} className="text-body">
+          {/* Visible text; the Select carries the same label for its name. */}
+          <span aria-hidden className="text-body">
             {t("dashboard.pagination.pageSize")}
-          </label>
-          <select
-            id={sizeId}
+          </span>
+          <Select
+            label={t("dashboard.pagination.pageSize")}
+            hideLabel
             value={pageSize}
-            onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-heading outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          >
-            {pageSizeOptions.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            options={pageSizeOptions.map((size) => ({
+              value: size,
+              label: String(size),
+            }))}
+            onChange={onPageSizeChange}
+            placement="top"
+          />
         </div>
 
         <div className="flex items-center gap-2">

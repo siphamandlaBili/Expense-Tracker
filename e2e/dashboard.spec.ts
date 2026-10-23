@@ -189,3 +189,21 @@ test("bottom sheet fits its content and can be dragged", async ({
   await drag(700);
   await expect(sheet).toBeHidden();
 });
+
+test("profile page shows the customer's details", async ({
+  page,
+  isMobile,
+}) => {
+  await signIn(page, USERS.active);
+  if (isMobile) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+  await page.getByRole("link", { name: "Profile" }).last().click();
+
+  const card = page.getByRole("region", { name: "Account details" });
+  await expect(card.getByText("john.doe@email.com")).toBeVisible();
+  await expect(card.getByText("South African Rand (ZAR)")).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});

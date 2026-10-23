@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { openApp } from "./fixtures.ts";
+import { chooseOption, openApp } from "./fixtures.ts";
 
 async function openTransactions(page: Page) {
   await openApp(page);
@@ -30,14 +30,12 @@ test("pages through and filters transactions", async ({ page }) => {
   await expect(page).toHaveURL(/page=2/);
   await expect(pagination(page).getByText(/^Showing 21–40 of/)).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Category" }).selectOption("Dining");
+  await chooseOption(page, "Category", "Dining");
   await expect(page).toHaveURL(/category=Dining/);
   await expect(page).not.toHaveURL(/page=/);
   await expect(pagination(page).getByText(/^Showing 1–/)).toBeVisible();
 
-  await page
-    .getByRole("combobox", { name: "Sort by" })
-    .selectOption("amount_desc");
+  await chooseOption(page, "Sort by", "Highest amount");
   await expect(page).toHaveURL(/sortBy=amount_desc/);
 });
 
@@ -57,4 +55,19 @@ test("transactions page has no accessibility violations", async ({ page }) => {
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("category dropdown shows every option without scrolling", async ({
+  page,
+}) => {
+  await openTransactions(page);
+  await page.getByRole("combobox", { name: "Category" }).click();
+  const list = page.getByRole("listbox");
+  await expect(list.getByRole("option")).toHaveCount(7);
+
+  const overflow = await list.evaluate(
+    (element) => element.scrollHeight - element.clientHeight,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  await expect(list.getByRole("option").last()).toBeInViewport();
 });

@@ -4,6 +4,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { ComingSoonPage } from "./pages/dashboard/ComingSoonPage";
 import { DashboardLayout } from "./pages/dashboard/DashboardLayout";
 import { OverviewPage } from "./pages/dashboard/OverviewPage";
+import { ProfilePage } from "./pages/dashboard/ProfilePage";
 import { SpendingPage } from "./pages/dashboard/SpendingPage";
 import { TransactionsPage } from "./pages/dashboard/TransactionsPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -29,10 +30,7 @@ function App() {
           path="goals"
           element={<ComingSoonPage title={t("dashboard.nav.goals")} />}
         />
-        <Route
-          path="profile"
-          element={<ComingSoonPage title={t("dashboard.nav.profile")} />}
-        />
+        <Route path="profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

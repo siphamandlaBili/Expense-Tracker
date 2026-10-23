@@ -84,15 +84,6 @@ export function firstName(fullName: string) {
   return fullName.trim().split(/\s+/)[0] ?? fullName;
 }
 
-export function initials(fullName: string) {
-  return fullName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 /** "14 Oct 2025, 14:30", in the viewer's timezone. */
 export function formatDateTime(isoDateTime: string) {
   const date = new Date(isoDateTime);
@@ -106,4 +97,10 @@ export function formatDateTime(isoDateTime: string) {
 /** "2024-10-01" to "1 Oct 2024". */
 export function formatDayLong(isoDate: string) {
   return dayMonthYear(new Date(`${isoDate}T00:00:00Z`), "UTC");
+}
+
+/** "ZAR" to "South African Rand (ZAR)". */
+export function formatCurrencyName(code: string) {
+  const name = new Intl.DisplayNames(["en"], { type: "currency" }).of(code);
+  return name && name !== code ? `${name} (${code})` : code;
 }

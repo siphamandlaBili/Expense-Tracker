@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Period, SpendingSummary } from "../../api/schemas";
 import { formatCount, formatCurrency } from "../../lib/format";
 import { ChangeIndicator } from "../dashboard/ChangeIndicator";
+import { DetailList } from "../dashboard/DetailList";
 import { Panel, QueryContent, Skeleton } from "../dashboard/Panel";
 
 const PERIOD_DAYS: Record<Period, number> = {
@@ -55,8 +56,9 @@ export function SpendingSummaryCard({
               </span>
             </p>
 
-            <dl className="mt-6 divide-y divide-slate-100 border-t border-slate-100 text-sm">
-              {[
+            <DetailList
+              className="mt-6 border-t border-slate-100"
+              items={[
                 {
                   label: t("spending.summary.transactions"),
                   value: formatCount(summary.transactionCount),
@@ -69,13 +71,8 @@ export function SpendingSummaryCard({
                   label: t("spending.summary.topCategory"),
                   value: summary.topCategory ?? t("spending.summary.none"),
                 },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between gap-4 py-2.5">
-                  <dt className="text-body">{label}</dt>
-                  <dd className="font-medium text-heading">{value}</dd>
-                </div>
-              ))}
-            </dl>
+              ]}
+            />
           </div>
         )}
       </QueryContent>

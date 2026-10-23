@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "../../App";
 import { customersApi } from "../../api/customers";
@@ -6,6 +6,12 @@ import { formatCurrency } from "../../lib/format";
 import { ACTIVE_USER } from "../../mocks/fixtures";
 import { server } from "../../mocks/server";
 import { expectNoA11yViolations } from "../../test/axe";
+import {
+  chooseOption,
+  endDialog,
+  pickDateRange,
+  startDialog,
+} from "../../test/interactions";
 import { sessions } from "../../test/factories";
 import { renderWithProviders } from "../../test/render";
 
@@ -53,24 +59,10 @@ const trendMonths = async () =>
   1;
 const categoryRows = async () =>
   (await within(panel(/category breakdown/i)).findAllByRole("row")).slice(1);
-const openDatePicker = async (
-  user: ReturnType<typeof renderSpending>["user"],
-) => {
-  await user.click(
-    within(panel(/category breakdown/i)).getByRole("button", {
-      name: /choose dates for the category breakdown/i,
-    }),
-  );
-  return screen.getByRole("dialog", { name: "Custom dates" });
-};
-const fillDates = (picker: HTMLElement, from: string, to: string) => {
-  fireEvent.change(within(picker).getByLabelText("From"), {
-    target: { value: from },
+const dateFields = () =>
+  within(panel(/category breakdown/i)).getByRole("group", {
+    name: "Category breakdown dates",
   });
-  fireEvent.change(within(picker).getByLabelText("To"), {
-    target: { value: to },
-  });
-};
 
 describe("Spending page", () => {
   it("loads each card with its endpoint's default filters", async () => {
@@ -128,11 +120,12 @@ describe("Spending page", () => {
     const { user } = renderSpending();
     await waitFor(async () => expect(await trendMonths()).toBe(12));
 
-    await user.selectOptions(
+    await chooseOption(
+      user,
       within(panel(/monthly spending trend/i)).getByRole("combobox", {
         name: "Trend length",
       }),
-      "24",
+      "Last 24 months",
     );
 
     await waitFor(async () => expect(await trendMonths()).toBe(24));
@@ -146,27 +139,34 @@ describe("Spending page", () => {
       within(panel(/monthly spending trend/i)).getByRole("combobox", {
         name: "Trend length",
       }),
-    ).toHaveValue("6");
+    ).toHaveTextContent("Last 6 months");
     await waitFor(async () => expect(await trendMonths()).toBe(6));
   });
 
   it("applies custom dates to the category breakdown only", async () => {
     const requests = recordRequests();
     const { user } = renderSpending();
-    const categoryPanel = panel(/category breakdown/i);
     await categoryRows();
 
-    const picker = await openDatePicker(user);
-    expect(picker).toHaveAccessibleDescription(
+    // Separate From and To fields, showing the period's dates to begin with.
+    expect(
+      within(dateFields()).getByRole("button", { name: /^From: / }),
+    ).toBeInTheDocument();
+    await user.click(
+      within(dateFields()).getByRole("button", { name: /^To: / }),
+    );
+    expect(endDialog()).toHaveAccessibleDescription(
       "Applies to the category breakdown only.",
     );
-    fillDates(picker, "2024-09-01", "2024-09-10");
-    await user.click(within(picker).getByRole("button", { name: "Apply" }));
+    await user.keyboard("{Escape}");
+
+    await pickDateRange(user, dateFields(), "2024-09-01", "2024-09-10");
 
     expect(
-      within(categoryPanel).getByRole("button", {
-        name: /1 Sep 2024 – 10 Sep 2024/,
-      }),
+      within(dateFields()).getByRole("button", { name: "From: 1 Sep 2024" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dateFields()).getByRole("button", { name: "To: 10 Sep 2024" }),
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(requests).toContainEqual({
@@ -181,51 +181,62 @@ describe("Spending page", () => {
         .filter((r) => r.endpoint === "summary")
         .every((r) => r.params.period === "30d"),
     ).toBe(true);
-
-    await user.click(
-      within(categoryPanel).getByRole("button", {
-        name: "Use selected period",
-      }),
-    );
-    expect(
-      within(categoryPanel).queryByRole("button", {
-        name: "Use selected period",
-      }),
-    ).not.toBeInTheDocument();
   });
 
-  it("choosing a period clears the category card's custom dates", async () => {
+  it("choosing a period replaces the category card's custom dates", async () => {
+    const requests = recordRequests();
     const { user } = renderSpending(
       sessions.active,
       "?from=2024-09-01&to=2024-09-10",
     );
-    const categoryPanel = panel(/category breakdown/i);
     expect(
-      within(categoryPanel).getByRole("button", {
-        name: "Use selected period",
-      }),
+      within(dateFields()).getByRole("button", { name: "From: 1 Sep 2024" }),
     ).toBeInTheDocument();
 
     await user.click(periodButton("7 days"));
 
-    expect(
-      within(categoryPanel).queryByRole("button", {
-        name: "Use selected period",
+    // The card follows the period again, showing its dates.
+    await waitFor(() =>
+      expect(requests).toContainEqual({
+        endpoint: "categories",
+        params: { period: "7d" },
       }),
-    ).not.toBeInTheDocument();
+    );
+    expect(
+      await within(dateFields()).findByRole("button", {
+        name: "From: 10 Sep 2024",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(dateFields()).getByRole("button", { name: "To: 16 Sep 2024" }),
+    ).toBeInTheDocument();
   });
 
-  it("rejects custom dates that end before they start", async () => {
-    const { user } = renderSpending();
-    await categoryRows();
-
-    const picker = await openDatePicker(user);
-    fillDates(picker, "2024-09-10", "2024-09-01");
-    await user.click(within(picker).getByRole("button", { name: "Apply" }));
-
-    expect(within(picker).getByRole("alert")).toHaveTextContent(
-      /start date must be on or before the end date/i,
+  it("keeps From on or before To, and To on or after From", async () => {
+    const { user } = renderSpending(
+      sessions.active,
+      "?from=2024-09-05&to=2024-09-10",
     );
+
+    await user.click(
+      within(dateFields()).getByRole("button", { name: "From: 5 Sep 2024" }),
+    );
+    expect(
+      within(startDialog()).getByRole("button", { name: "11 Sep 2024" }),
+    ).toBeDisabled();
+    expect(
+      within(startDialog()).getByRole("button", { name: "10 Sep 2024" }),
+    ).toBeEnabled();
+
+    await user.click(
+      within(dateFields()).getByRole("button", { name: "To: 10 Sep 2024" }),
+    );
+    expect(
+      within(endDialog()).getByRole("button", { name: "4 Sep 2024" }),
+    ).toBeDisabled();
+    expect(
+      within(endDialog()).getByRole("button", { name: "5 Sep 2024" }),
+    ).toBeEnabled();
 
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

@@ -1,4 +1,3 @@
-import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
   SORT_OPTIONS,
@@ -6,7 +5,8 @@ import {
   type SortBy,
 } from "../../api/schemas";
 import type { DateRange } from "../../lib/dateRange";
-import { DateRangePicker } from "../dashboard/DateRangePicker";
+import { DateRangeFields } from "../dashboard/DateRangeFields";
+import { Select } from "../dashboard/Select";
 
 type TransactionFiltersBarProps = {
   /** Categories from /filters. */
@@ -20,9 +20,6 @@ type TransactionFiltersBarProps = {
   onClear: () => void;
 };
 
-const selectClass =
-  "rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-heading outline-none hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary";
-
 /** The /transactions filters: category, date range and sort order. */
 export function TransactionFiltersBar({
   categories,
@@ -35,8 +32,6 @@ export function TransactionFiltersBar({
   onClear,
 }: TransactionFiltersBarProps) {
   const { t } = useTranslation();
-  const categoryId = useId();
-  const sortId = useId();
   const filtered = Boolean(category || dates);
 
   return (
@@ -45,62 +40,38 @@ export function TransactionFiltersBar({
       aria-label={t("transactions.filters.label")}
       className="flex flex-wrap items-end gap-3"
     >
-      <div>
-        <label
-          htmlFor={categoryId}
-          className="mb-1 block text-xs font-medium text-body"
-        >
-          {t("transactions.filters.category")}
-        </label>
-        <select
-          id={categoryId}
-          value={category ?? ""}
-          onChange={(event) =>
-            onCategoryChange(event.target.value || undefined)
-          }
-          className={selectClass}
-        >
-          <option value="">{t("transactions.filters.allCategories")}</option>
-          {categories.map(({ name }) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Select
+        label={t("transactions.filters.category")}
+        value={category ?? ""}
+        options={[
+          { value: "", label: t("transactions.filters.allCategories") },
+          ...categories.map(({ name }) => ({ value: name, label: name })),
+        ]}
+        onChange={(next) => onCategoryChange(next || undefined)}
+      />
 
       <div>
         <span className="mb-1 block text-xs font-medium text-body" aria-hidden>
           {t("transactions.filters.dates")}
         </span>
-        <DateRangePicker
-          label={t("transactions.filters.chooseDates")}
+        <DateRangeFields
+          align="left"
+          label={t("transactions.filters.dates")}
           dates={dates}
           active={Boolean(dates)}
           onApply={onDatesChange}
         />
       </div>
 
-      <div>
-        <label
-          htmlFor={sortId}
-          className="mb-1 block text-xs font-medium text-body"
-        >
-          {t("transactions.filters.sort")}
-        </label>
-        <select
-          id={sortId}
-          value={sortBy}
-          onChange={(event) => onSortChange(event.target.value as SortBy)}
-          className={selectClass}
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {t(`transactions.sort.${option}`)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Select
+        label={t("transactions.filters.sort")}
+        value={sortBy}
+        options={SORT_OPTIONS.map((option) => ({
+          value: option,
+          label: t(`transactions.sort.${option}`),
+        }))}
+        onChange={onSortChange}
+      />
 
       {filtered && (
         <button

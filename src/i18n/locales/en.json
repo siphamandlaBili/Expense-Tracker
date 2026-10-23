@@ -58,7 +58,9 @@
     },
     "topBar": {
       "notifications": "Notifications",
-      "account": "Signed in as {{name}}"
+      "account": "Signed in as {{name}}",
+      "accountMenu": "Account",
+      "noNotifications": "No notifications"
     },
     "greeting": {
       "morning": "Good morning, {{name}}",
@@ -136,16 +138,13 @@
     },
     "comingSoon": "This page is coming soon.",
     "dateRange": {
-      "title": "Custom dates",
       "from": "From",
       "to": "To",
-      "apply": "Apply",
-      "cancel": "Cancel",
-      "errors": {
-        "required": "Choose both a start and an end date.",
-        "order": "The start date must be on or before the end date.",
-        "future": "Dates can't be in the future."
-      }
+      "notSet": "Select date",
+      "chooseStart": "Choose a start date",
+      "chooseEnd": "Choose an end date",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month"
     },
     "pagination": {
       "label": "Pagination",
@@ -170,9 +169,8 @@
       "1y": "1 year"
     },
     "customRange": {
-      "open": "Choose dates for the category breakdown",
-      "hint": "Applies to the category breakdown only.",
-      "clear": "Use selected period"
+      "label": "Category breakdown dates",
+      "hint": "Applies to the category breakdown only."
     },
     "trend": {
       "range": "Trend length",
@@ -214,7 +212,6 @@
       "category": "Category",
       "allCategories": "All categories",
       "dates": "Dates",
-      "chooseDates": "Choose dates",
       "sort": "Sort by",
       "clear": "Clear filters"
     },
@@ -226,6 +223,17 @@
     },
     "empty": "No transactions yet. Your purchases will appear here.",
     "noMatches": "No transactions match these filters."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your personal and account details.",
+    "details": {
+      "title": "Account details",
+      "totalSpent": "Total spent since joining",
+      "customerId": "Customer ID",
+      "joinDate": "Member since",
+      "currency": "Currency"
+    }
   },
   "features": {
     "heading": "Features",

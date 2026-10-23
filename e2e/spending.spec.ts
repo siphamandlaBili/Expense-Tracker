@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { openApp } from "./fixtures.ts";
+import { chooseOption, openApp } from "./fixtures.ts";
 
 async function openSpending(page: Page, isMobile: boolean) {
   await openApp(page);
@@ -37,7 +37,7 @@ test("spending page loads, filters by period and category", async ({
       .getByText("vs. the previous 90 days"),
   ).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Trend length" }).selectOption("24");
+  await chooseOption(page, "Trend length", "Last 24 months");
   await expect(page).toHaveURL(/months=24/);
 
   await page

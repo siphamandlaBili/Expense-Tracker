@@ -1,11 +1,13 @@
 import type { UseQueryResult } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { LuCheck } from "react-icons/lu";
 import type { CategoryMeta, SpendingByCategory } from "../../api/schemas";
 import { formatCount, formatCurrency, formatPercent } from "../../lib/format";
 import type { DateRange } from "../../lib/dateRange";
 import { CategoryDonut } from "../charts/CategoryDonut";
 import { CategoryBadge } from "../dashboard/CategoryBadge";
-import { DateRangePicker } from "../dashboard/DateRangePicker";
+import { DateRangeFields } from "../dashboard/DateRangeFields";
 import { EmptyState, Panel, QueryContent, Skeleton } from "../dashboard/Panel";
 
 type CategoryAnalysisCardProps = {
@@ -17,10 +19,11 @@ type CategoryAnalysisCardProps = {
   onSelectedChange: (selected: string[]) => void;
   /**
    * Custom dates for this card only: /spending/categories is the one endpoint
-   * on the page that accepts startDate/endDate. Undefined uses the period.
+   * on the page that accepts startDate/endDate. Undefined uses the period;
+   * choosing a period on the page clears them.
    */
   customDates?: DateRange;
-  onCustomDatesChange: (dates: DateRange | undefined) => void;
+  onCustomDatesChange: (dates: DateRange) => void;
   currency?: string;
 };
 
@@ -31,12 +34,32 @@ const COLUMN = {
   transactions: "hidden @lg:table-cell",
 };
 
-const chipClass = (active: boolean) =>
-  `rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-    active
-      ? "border-primary bg-primary-light text-primary"
-      : "border-slate-200 bg-white text-heading hover:border-primary hover:text-primary"
-  }`;
+/** Toggle chip; a tick marks the active ones (not just colour). */
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+        active
+          ? "border-primary bg-primary-light text-primary"
+          : "border-slate-200 bg-white text-heading hover:border-primary hover:text-primary"
+      }`}
+    >
+      {active && <LuCheck className="size-3.5" aria-hidden />}
+      {children}
+    </button>
+  );
+}
 
 /**
  * Full category table with a donut. Date filtering uses the API (period or
@@ -64,24 +87,13 @@ export function CategoryAnalysisCard({
     <Panel
       title={t("spending.categories.title")}
       action={
-        <div className="flex flex-wrap items-center gap-2">
-          {customDates && (
-            <button
-              type="button"
-              onClick={() => onCustomDatesChange(undefined)}
-              className="rounded-full px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary-light"
-            >
-              {t("spending.customRange.clear")}
-            </button>
-          )}
-          <DateRangePicker
-            label={t("spending.customRange.open")}
-            hint={t("spending.customRange.hint")}
-            dates={customDates ?? query.data?.dateRange}
-            active={Boolean(customDates)}
-            onApply={onCustomDatesChange}
-          />
-        </div>
+        <DateRangeFields
+          label={t("spending.customRange.label")}
+          hint={t("spending.customRange.hint")}
+          dates={customDates ?? query.data?.dateRange}
+          active={Boolean(customDates)}
+          onApply={onCustomDatesChange}
+        />
       }
     >
       {allCategories.length > 0 && (
@@ -90,24 +102,20 @@ export function CategoryAnalysisCard({
           aria-label={t("spending.categories.filterLabel")}
           className="-mt-1 mb-4 flex flex-wrap gap-2"
         >
-          <button
-            type="button"
-            aria-pressed={selected.length === 0}
+          <FilterChip
+            active={selected.length === 0}
             onClick={() => onSelectedChange([])}
-            className={chipClass(selected.length === 0)}
           >
             {t("spending.categories.all")}
-          </button>
+          </FilterChip>
           {allCategories.map((category) => (
-            <button
+            <FilterChip
               key={category.name}
-              type="button"
-              aria-pressed={selected.includes(category.name)}
+              active={selected.includes(category.name)}
               onClick={() => toggle(category.name)}
-              className={chipClass(selected.includes(category.name))}
             >
               {category.name}
-            </button>
+            </FilterChip>
           ))}
         </div>
       )}

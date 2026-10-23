@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "../../App";
 import { customersApi } from "../../api/customers";
@@ -6,6 +6,13 @@ import { formatCount, formatCurrency } from "../../lib/format";
 import { ACTIVE_USER } from "../../mocks/fixtures";
 import { server } from "../../mocks/server";
 import { expectNoA11yViolations } from "../../test/axe";
+import {
+  chooseOption,
+  clickDay,
+  endDialog,
+  pickDateRange,
+  startDialog,
+} from "../../test/interactions";
 import { sessions } from "../../test/factories";
 import { renderWithProviders } from "../../test/render";
 
@@ -101,7 +108,8 @@ describe("Transactions page", () => {
     const { user } = renderTransactions();
     await rows();
 
-    await user.selectOptions(
+    await chooseOption(
+      user,
       await screen.findByRole("combobox", { name: "Category" }),
       "Dining",
     );
@@ -128,9 +136,10 @@ describe("Transactions page", () => {
     const { user } = renderTransactions();
     await rows();
 
-    await user.selectOptions(
+    await chooseOption(
+      user,
       screen.getByRole("combobox", { name: "Sort by" }),
-      "amount_desc",
+      "Highest amount",
     );
 
     await waitFor(() =>
@@ -148,15 +157,12 @@ describe("Transactions page", () => {
     const { user } = renderTransactions();
     await rows();
 
-    await user.click(screen.getByRole("button", { name: "Choose dates" }));
-    const picker = screen.getByRole("dialog", { name: "Custom dates" });
-    fireEvent.change(within(picker).getByLabelText("From"), {
-      target: { value: "2024-09-01" },
-    });
-    fireEvent.change(within(picker).getByLabelText("To"), {
-      target: { value: "2024-09-10" },
-    });
-    await user.click(within(picker).getByRole("button", { name: "Apply" }));
+    await pickDateRange(
+      user,
+      screen.getByRole("group", { name: "Dates" }),
+      "2024-09-01",
+      "2024-09-10",
+    );
 
     await waitFor(() =>
       expect(lastRequest(requests)).toMatchObject({
@@ -167,12 +173,39 @@ describe("Transactions page", () => {
     );
   });
 
+  it("moves on to the end date after picking a start, and waits for both", async () => {
+    const requests = recordRequests();
+    const { user } = renderTransactions();
+    await rows();
+    const fields = screen.getByRole("group", { name: "Dates" });
+    expect(
+      within(fields).getByRole("button", { name: "From: Select date" }),
+    ).toBeInTheDocument();
+    const before = requests.length;
+
+    await user.click(within(fields).getByRole("button", { name: /^From:/ }));
+    await clickDay(user, startDialog(), "2024-09-01");
+
+    // The end-date calendar opens straight away; nothing is applied yet.
+    expect(endDialog()).toBeInTheDocument();
+    expect(requests).toHaveLength(before);
+
+    await clickDay(user, endDialog(), "2024-09-10");
+    await waitFor(() =>
+      expect(lastRequest(requests)).toMatchObject({
+        startDate: "2024-09-01",
+        endDate: "2024-09-10",
+      }),
+    );
+  });
+
   it("changes the page size with limit and starts from page 1", async () => {
     const requests = recordRequests();
     const { user } = renderTransactions(sessions.active, "?page=3");
     await rows();
 
-    await user.selectOptions(
+    await chooseOption(
+      user,
       within(pagination()).getByRole("combobox", { name: "Rows per page" }),
       "50",
     );
@@ -202,11 +235,11 @@ describe("Transactions page", () => {
         category: "Dining",
       }),
     );
-    expect(screen.getByRole("combobox", { name: "Category" })).toHaveValue(
-      "Dining",
-    );
-    expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveValue(
-      "date_asc",
+    expect(
+      screen.getByRole("combobox", { name: "Category" }),
+    ).toHaveTextContent("Dining");
+    expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveTextContent(
+      "Oldest first",
     );
   });
 
@@ -239,7 +272,9 @@ describe("Transactions page", () => {
 
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
 
-    expect(screen.getByRole("combobox", { name: "Category" })).toHaveValue("");
+    expect(
+      screen.getByRole("combobox", { name: "Category" }),
+    ).toHaveTextContent("All categories");
     expect(
       screen.queryByRole("button", { name: "Clear filters" }),
     ).not.toBeInTheDocument();
